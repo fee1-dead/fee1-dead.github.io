@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>Deadbeef&#x27;s Blog</title>
+    <link href="https://fee1-dead.github.io/atom.xml" rel="self" type="application/atom+xml"/>
+    <link href="https://fee1-dead.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2023-11-27T00:00:00+00:00</updated>
+    <id>https://fee1-dead.github.io/atom.xml</id>
+    <entry xml:lang="en">
+        <title>Devlog 001</title>
+        <published>2023-11-27T00:00:00+00:00</published>
+        <updated>2023-11-27T00:00:00+00:00</updated>
+        <author>
+          <name>beef</name>
+        </author>
+        <link rel="alternate" href="https://fee1-dead.github.io/devlog001/" type="text/html"/>
+        <id>https://fee1-dead.github.io/devlog001/</id>
+        
+        <content type="html">&lt;p&gt;I&#x27;ve been thinking of starting a devlog for a long time. There are many reasons why I couldn&#x27;t just start it previously:&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;Lack of time. Do I really have time to do this stuff? Maybe I do, but am I going to spend too much time trying to get everything to look good and exactly as I wanted it on first try? Historically, that answer has been yes. A few days ago, I realized that that&#x27;s not good, so instead of spending time on the looks I am just going to write some stuff.&lt;&#x2F;li&gt;
+&lt;li&gt;Perfectionism. Old me wanted a perfectly built place that matched what I wanted, but I have changed. Now I just want a place to write some ideas and updates.&lt;&#x2F;li&gt;
+&lt;li&gt;Focus. I mean, blog posts that actually get read by other people have a clear focus in what they want to write about, and I usually don&#x27;t. Do I really need that for a blog? Not really.&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;Hopefully, by the time someone reads the above three points, they will also know that I ramble about things that don&#x27;t really interest them. I guess that&#x27;s fine, though, since maybe this can be a place where I write for myself and not for others. This is my first post ever, so there&#x27;s time and space to explore things!&lt;&#x2F;p&gt;
+&lt;p&gt;Okay here&#x27;s some exciting technical stuff:&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;working-with-effects-in-rust&quot;&gt;Working with effects in Rust&lt;&#x2F;h3&gt;
+&lt;p&gt;In the Rust compiler, we&#x27;re working on &lt;a href=&quot;https:&#x2F;&#x2F;blog.rust-lang.org&#x2F;inside-rust&#x2F;2022&#x2F;07&#x2F;27&#x2F;keyword-generics.html&quot;&gt;an initiative&lt;&#x2F;a&gt; to make an internal refactoring while not changing the user-facing aspects of &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;issues&#x2F;67792&quot;&gt;a feature&lt;&#x2F;a&gt; named &lt;code&gt;const_trait_impl&lt;&#x2F;code&gt;. The old implementation simply made the feature a special case, treating it in many different ways in many different places, and had many issues that I won&#x27;t go into in this dev log. (maybe for a separate blog post though!) But here are some progress and challenges recently:&lt;&#x2F;p&gt;
+&lt;h4 id=&quot;renabling-effects-in-core&quot;&gt;Renabling effects in &lt;code&gt;core&lt;&#x2F;code&gt;&lt;&#x2F;h4&gt;
+&lt;p&gt;As a step towards a more mature feature, we previously &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;pull&#x2F;114776&quot;&gt;enabled&lt;&#x2F;a&gt; effects in &lt;code&gt;core&lt;&#x2F;code&gt;, which made &lt;code&gt;const fn&lt;&#x2F;code&gt; and methods desugar into generic, depending on whether the function is called from a const context, like so:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;a&lt;&#x2F;span&gt;&lt;span&gt;() {}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; turns to..
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const&lt;&#x2F;span&gt;&lt;span&gt; host: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;bool&lt;&#x2F;span&gt;&lt;span&gt; = true&amp;gt;() {}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Here, the &lt;code&gt;host&lt;&#x2F;code&gt; flag is set to &lt;code&gt;false&lt;&#x2F;code&gt; if the function is called in compile time, while it is set to &lt;code&gt;true&lt;&#x2F;code&gt; if called from a context that runs in runtime. This desugaring &lt;em&gt;shouldn&#x27;t&lt;&#x2F;em&gt; have any effects on anyone using the standard library or anything within the standard library. But we &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;pull&#x2F;116856&quot;&gt;disabled&lt;&#x2F;a&gt; &lt;code&gt;effects&lt;&#x2F;code&gt; after finding out that actually, you can just call &lt;code&gt;a::&amp;lt;true&amp;gt;()&lt;&#x2F;code&gt; when this desugaring is enabled, breaking the assumption that this feature is invisible to users. This was &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;pull&#x2F;117171&quot;&gt;fixed&lt;&#x2F;a&gt; shortly later, while a similar fallout that caused rustdoc to display these desugared parameters in the generated documentation was fixed in &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;pull&#x2F;116670&quot;&gt;two&lt;&#x2F;a&gt; &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;pull&#x2F;117531&quot;&gt;PRs&lt;&#x2F;a&gt; by oli-obk and fmease. After these fixes were merged, I went ahead and &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;pull&#x2F;117825&quot;&gt;reenabled&lt;&#x2F;a&gt; effects.&lt;&#x2F;p&gt;
+&lt;h4 id=&quot;effects-desugaring-with-default-type-params&quot;&gt;Effects desugaring with default type params&lt;&#x2F;h4&gt;
+&lt;p&gt;The &lt;code&gt;PartialEq&lt;&#x2F;code&gt; trait is defined like this:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub trait &lt;&#x2F;span&gt;&lt;span&gt;PartialEq&amp;lt;Rhs: ?Sized = Self&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;* stuff *&#x2F;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;And if we had the effects desugaring, it would be:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pub trait &lt;&#x2F;span&gt;&lt;span&gt;PartialEq&amp;lt;Rhs: ?Sized = Self, const host: bool = true&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;* stuff *&#x2F;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;And here we have a problem, since if someone tried to implement &lt;code&gt;const PartialEq&lt;&#x2F;code&gt;, their impl could look like:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;impl &lt;&#x2F;span&gt;&lt;span&gt;const PartialEq for () {}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; desugars to..
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;impl&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const&lt;&#x2F;span&gt;&lt;span&gt; host: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;bool&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt; PartialEq&amp;lt;host&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;for&lt;&#x2F;span&gt;&lt;span&gt; () {}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;But this (currently) generates a mismatch error since a const param &lt;code&gt;host&lt;&#x2F;code&gt; is supplied to a type param &lt;code&gt;Rhs&lt;&#x2F;code&gt;! To fix this, I have two ideas in mind:&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;Give the desugaring of &lt;code&gt;impl const&lt;&#x2F;code&gt; and &lt;code&gt;: ~const&lt;&#x2F;code&gt; bounds special treatment, such that the parameters it desugar into must be dealt with specifically as opposed to the normal params supplied (this might involve changing the internal HIR representation of generic args)&lt;&#x2F;li&gt;
+&lt;li&gt;Give the params special treatment, but only use some sort of an internal marker to distinguish desugared host bounds. We&#x27;d change the logic somewhere when handling those params and fit the desugared param into its place correctly.&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;I&#x27;ll say they&#x27;re quite similar and we might have to end up doing both. We&#x27;ll see!&lt;&#x2F;p&gt;
+&lt;h4 id=&quot;checking-all-method-calls-for-effects&quot;&gt;Checking all method calls for effects&lt;&#x2F;h4&gt;
+&lt;p&gt;Somewhere in the code for Rust&#x27;s type checker, there&#x27;s a function that &lt;em&gt;enforces effects&lt;&#x2F;em&gt;. This means that we try to equate effects to what we expect them to be. Here&#x27;s an example to illustrate:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; all desugared, since you probably know what it means
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;some_const_fn&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const&lt;&#x2F;span&gt;&lt;span&gt; host: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;bool&lt;&#x2F;span&gt;&lt;span&gt; = true&amp;gt;() {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;a_non_const_fn&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    some_const_fn::&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;background-color:#bf616a;color:#2b303b;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;another_const_fn&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const&lt;&#x2F;span&gt;&lt;span&gt; host: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;bool&lt;&#x2F;span&gt;&lt;span&gt; = true&amp;gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    some_const_fn::&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;background-color:#bf616a;color:#2b303b;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;CONST_ITEM&lt;&#x2F;span&gt;&lt;span&gt;: () = {
+&lt;&#x2F;span&gt;&lt;span&gt;    some_const_fn::&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;background-color:#bf616a;color:#2b303b;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span&gt;};
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Before typeck (the process that we call type-checking), effect parameters are unknown (marked with a question mark), and the &lt;code&gt;enforce_context_effects&lt;&#x2F;code&gt; comes in and fills them in. These examples are all different:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; all desugared, since you probably know what it means
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;some_const_fn&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const&lt;&#x2F;span&gt;&lt;span&gt; host: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;bool&lt;&#x2F;span&gt;&lt;span&gt; = true&amp;gt;() {}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;a_non_const_fn&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; not a const-context, so fill in `true`.
+&lt;&#x2F;span&gt;&lt;span&gt;    some_const_fn::&amp;lt;true&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;another_const_fn&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const&lt;&#x2F;span&gt;&lt;span&gt; host: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;bool&lt;&#x2F;span&gt;&lt;span&gt; = true&amp;gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; in a const-fn context (could be called in runtime _or_ compile time),
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; fill in the host param that this function has.
+&lt;&#x2F;span&gt;&lt;span&gt;    some_const_fn::&amp;lt;host&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;const &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;CONST_ITEM&lt;&#x2F;span&gt;&lt;span&gt;: () = {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; in an always-const context (must be evaluated at compile time),
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;&#x2F;&#x2F; fill in `false`.
+&lt;&#x2F;span&gt;&lt;span&gt;    some_const_fn::&amp;lt;false&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span&gt;};
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;While trying to make &lt;code&gt;PartialEq&lt;&#x2F;code&gt; work as a &lt;code&gt;const_trait&lt;&#x2F;code&gt;, I noticed that method calls desugared by calling &lt;code&gt;a == b&lt;&#x2F;code&gt; don&#x27;t get checked. &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;pull&#x2F;118282&quot;&gt;This PR&lt;&#x2F;a&gt; fixed that. Another step towards enabling effects by default for all crates!&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;where-are-the-other-sections&quot;&gt;Where are the other sections?&lt;&#x2F;h3&gt;
+&lt;p&gt;I didn&#x27;t have time so I&#x27;ll end here. I do want to summarize the state of some personal projects that I have been working on for the past few years in a future devlog, but I also want to get this post &lt;em&gt;done&lt;&#x2F;em&gt;, so maybe in the next one!&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
