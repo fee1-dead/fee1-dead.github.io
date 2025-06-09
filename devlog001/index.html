@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <title>Devlog 001 - beef</title>
+    
+    
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"><meta name="description" content=" Devlog 001 .. What&#x27;s the point of them, anyway?"/><meta name="keywords" content="rust, devlog, dev" />
+    <meta property="og:title" content="beef&#x27;s blog -&nbsp;Devlog 001" />
+    <meta property="og:type" content="website"/><meta property="og:url" content="https:&#x2F;&#x2F;fee1-dead.github.io&#x2F;devlog001&#x2F;"/><meta property="og:description" content=".. What&#x27;s the point of them, anyway?"/>
+    <link rel="preload" href="https://fee1-dead.github.io/assets/fonts/FiraCode-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="preload" href="https://fee1-dead.github.io/assets/fonts/FiraCode-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://fee1-dead.github.io/style.css?h=8f8e8cd5abbf002f4888">
+    <link rel="stylesheet" href="https://fee1-dead.github.io/color/pink.css?h=49a4d53acd4ed3dfff01"><link rel="stylesheet" href="https://fee1-dead.github.io/custom.css?h=a8fe3fe9230dfbed80f6">
+    
+</head>
+    <body>
+        <div class="container center">
+<header class="header">
+    <div class="header__inner">
+        <div class="header__logo">
+            <a href="https:&#x2F;&#x2F;fee1-dead.github.io">
+    <div class="logo">
+        beef
+    </div>
+</a>
+        </div>
+        <div class="menu-trigger">menu</div>
+    </div>
+    
+    <nav class="menu">
+        <ul class="menu__inner menu__inner--desktop">
+            
+            
+        <li>
+            <a href="
+    
+        https://fee1-dead.github.io/about
+    
+">about</a>
+        </li>
+        <li>
+            <a href="
+    
+        https:&#x2F;&#x2F;github.com&#x2F;fee1-dead&#x2F;fee1-dead.github.io
+    
+">GitHub</a>
+        </li></ul>
+
+        <ul class="menu__inner menu__inner--mobile">
+            
+        <li>
+            <a href="
+    
+        https://fee1-dead.github.io/about
+    
+">about</a>
+        </li>
+        <li>
+            <a href="
+    
+        https:&#x2F;&#x2F;github.com&#x2F;fee1-dead&#x2F;fee1-dead.github.io
+    
+">GitHub</a>
+        </li>
+        </ul>
+    </nav>
+
+    </header>
+<div class="content"><article class="post">
+        <header>
+            <h1 class="post-title">
+                <a href="https:&#x2F;&#x2F;fee1-dead.github.io&#x2F;devlog001&#x2F;">Devlog 001</a>
+            </h1>
+            
+    <div class="post-meta">
+        <span class="post-date">2023.11.27
+                </span>
+
+        <span class="post-author"></span>
+
+        
+
+    
+    ::
+    #<a href="https://fee1-dead.github.io/tags/rust/">rust</a>
+        
+    #<a href="https://fee1-dead.github.io/tags/devlog/">devlog</a>
+        
+    #<a href="https://fee1-dead.github.io/tags/dev/">dev</a>
+        
+    
+            
+        
+    
+    </div>
+
+            
+    
+</header><p>I've been thinking of starting a devlog for a long time. There are many reasons why I couldn't just start it previously:</p>
+<ol>
+<li>Lack of time. Do I really have time to do this stuff? Maybe I do, but am I going to spend too much time trying to get everything to look good and exactly as I wanted it on first try? Historically, that answer has been yes. A few days ago, I realized that that's not good, so instead of spending time on the looks I am just going to write some stuff.</li>
+<li>Perfectionism. Old me wanted a perfectly built place that matched what I wanted, but I have changed. Now I just want a place to write some ideas and updates.</li>
+<li>Focus. I mean, blog posts that actually get read by other people have a clear focus in what they want to write about, and I usually don't. Do I really need that for a blog? Not really.</li>
+</ol>
+<p>Hopefully, by the time someone reads the above three points, they will also know that I ramble about things that don't really interest them. I guess that's fine, though, since maybe this can be a place where I write for myself and not for others. This is my first post ever, so there's time and space to explore things!</p>
+<p>Okay here's some exciting technical stuff:</p>
+<h3 id="working-with-effects-in-rust">Working with effects in Rust</h3>
+<p>In the Rust compiler, we're working on <a href="https://blog.rust-lang.org/inside-rust/2022/07/27/keyword-generics.html">an initiative</a> to make an internal refactoring while not changing the user-facing aspects of <a href="https://github.com/rust-lang/rust/issues/67792">a feature</a> named <code>const_trait_impl</code>. The old implementation simply made the feature a special case, treating it in many different ways in many different places, and had many issues that I won't go into in this dev log. (maybe for a separate blog post though!) But here are some progress and challenges recently:</p>
+<h4 id="renabling-effects-in-core">Renabling effects in <code>core</code></h4>
+<p>As a step towards a more mature feature, we previously <a href="https://github.com/rust-lang/rust/pull/114776">enabled</a> effects in <code>core</code>, which made <code>const fn</code> and methods desugar into generic, depending on whether the function is called from a const context, like so:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">const fn </span><span style="color:#8fa1b3;">a</span><span>() {}
+</span><span style="color:#65737e;">// turns to..
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">a</span><span>&lt;</span><span style="color:#b48ead;">const</span><span> host: </span><span style="color:#b48ead;">bool</span><span> = true&gt;() {}
+</span></code></pre>
+<p>Here, the <code>host</code> flag is set to <code>false</code> if the function is called in compile time, while it is set to <code>true</code> if called from a context that runs in runtime. This desugaring <em>shouldn't</em> have any effects on anyone using the standard library or anything within the standard library. But we <a href="https://github.com/rust-lang/rust/pull/116856">disabled</a> <code>effects</code> after finding out that actually, you can just call <code>a::&lt;true&gt;()</code> when this desugaring is enabled, breaking the assumption that this feature is invisible to users. This was <a href="https://github.com/rust-lang/rust/pull/117171">fixed</a> shortly later, while a similar fallout that caused rustdoc to display these desugared parameters in the generated documentation was fixed in <a href="https://github.com/rust-lang/rust/pull/116670">two</a> <a href="https://github.com/rust-lang/rust/pull/117531">PRs</a> by oli-obk and fmease. After these fixes were merged, I went ahead and <a href="https://github.com/rust-lang/rust/pull/117825">reenabled</a> effects.</p>
+<h4 id="effects-desugaring-with-default-type-params">Effects desugaring with default type params</h4>
+<p>The <code>PartialEq</code> trait is defined like this:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub trait </span><span>PartialEq&lt;Rhs: ?Sized = Self&gt; {
+</span><span>    </span><span style="color:#65737e;">/* stuff */
+</span><span>}
+</span></code></pre>
+<p>And if we had the effects desugaring, it would be:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub trait </span><span>PartialEq&lt;Rhs: ?Sized = Self, const host: bool = true&gt; {
+</span><span>    </span><span style="color:#65737e;">/* stuff */
+</span><span>}
+</span></code></pre>
+<p>And here we have a problem, since if someone tried to implement <code>const PartialEq</code>, their impl could look like:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl </span><span>const PartialEq for () {}
+</span><span style="color:#65737e;">// desugars to..
+</span><span style="color:#b48ead;">impl</span><span>&lt;</span><span style="color:#b48ead;">const</span><span> host: </span><span style="color:#b48ead;">bool</span><span>&gt; PartialEq&lt;host&gt; </span><span style="color:#b48ead;">for</span><span> () {}
+</span></code></pre>
+<p>But this (currently) generates a mismatch error since a const param <code>host</code> is supplied to a type param <code>Rhs</code>! To fix this, I have two ideas in mind:</p>
+<ol>
+<li>Give the desugaring of <code>impl const</code> and <code>: ~const</code> bounds special treatment, such that the parameters it desugar into must be dealt with specifically as opposed to the normal params supplied (this might involve changing the internal HIR representation of generic args)</li>
+<li>Give the params special treatment, but only use some sort of an internal marker to distinguish desugared host bounds. We'd change the logic somewhere when handling those params and fit the desugared param into its place correctly.</li>
+</ol>
+<p>I'll say they're quite similar and we might have to end up doing both. We'll see!</p>
+<h4 id="checking-all-method-calls-for-effects">Checking all method calls for effects</h4>
+<p>Somewhere in the code for Rust's type checker, there's a function that <em>enforces effects</em>. This means that we try to equate effects to what we expect them to be. Here's an example to illustrate:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// all desugared, since you probably know what it means
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">some_const_fn</span><span>&lt;</span><span style="color:#b48ead;">const</span><span> host: </span><span style="color:#b48ead;">bool</span><span> = true&gt;() {}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">a_non_const_fn</span><span>() {
+</span><span>    some_const_fn::&lt;</span><span style="background-color:#bf616a;color:#2b303b;">?</span><span>&gt;();
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">another_const_fn</span><span>&lt;</span><span style="color:#b48ead;">const</span><span> host: </span><span style="color:#b48ead;">bool</span><span> = true&gt;() {
+</span><span>    some_const_fn::&lt;</span><span style="background-color:#bf616a;color:#2b303b;">?</span><span>&gt;();
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">CONST_ITEM</span><span>: () = {
+</span><span>    some_const_fn::&lt;</span><span style="background-color:#bf616a;color:#2b303b;">?</span><span>&gt;();
+</span><span>};
+</span></code></pre>
+<p>Before typeck (the process that we call type-checking), effect parameters are unknown (marked with a question mark), and the <code>enforce_context_effects</code> comes in and fills them in. These examples are all different:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// all desugared, since you probably know what it means
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">some_const_fn</span><span>&lt;</span><span style="color:#b48ead;">const</span><span> host: </span><span style="color:#b48ead;">bool</span><span> = true&gt;() {}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">a_non_const_fn</span><span>() {
+</span><span>    </span><span style="color:#65737e;">// not a const-context, so fill in `true`.
+</span><span>    some_const_fn::&lt;true&gt;();
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">another_const_fn</span><span>&lt;</span><span style="color:#b48ead;">const</span><span> host: </span><span style="color:#b48ead;">bool</span><span> = true&gt;() {
+</span><span>    </span><span style="color:#65737e;">// in a const-fn context (could be called in runtime _or_ compile time),
+</span><span>    </span><span style="color:#65737e;">// fill in the host param that this function has.
+</span><span>    some_const_fn::&lt;host&gt;();
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#d08770;">CONST_ITEM</span><span>: () = {
+</span><span>    </span><span style="color:#65737e;">// in an always-const context (must be evaluated at compile time),
+</span><span>    </span><span style="color:#65737e;">// fill in `false`.
+</span><span>    some_const_fn::&lt;false&gt;();
+</span><span>};
+</span></code></pre>
+<p>While trying to make <code>PartialEq</code> work as a <code>const_trait</code>, I noticed that method calls desugared by calling <code>a == b</code> don't get checked. <a href="https://github.com/rust-lang/rust/pull/118282">This PR</a> fixed that. Another step towards enabling effects by default for all crates!</p>
+<h3 id="where-are-the-other-sections">Where are the other sections?</h3>
+<p>I didn't have time so I'll end here. I do want to summarize the state of some personal projects that I have been working on for the past few years in a future devlog, but I also want to get this post <em>done</em>, so maybe in the next one!</p>
+
+
+        
+    
+
+        
+        
+    </article></div>
+    <div class="pagination">
+        <div class="pagination__buttons">
+            </div>
+    </div>
+<footer class="footer">
+                    <div class="footer__inner"><div class="copyright">
+            <span>© 2024 <a href="https://github.com/fee1-dead">beef</a> :: Powered by <a href="https://www.getzola.org/">Zola</a></span>
+            <span>:: Theme: <a href="https://github.com/ejmg/zerm">zerm</a> made by <a href="https://github.com/ejmg">ejmg</a></span>
+        </div>
+    <script type="text/javascript" src="https://fee1-dead.github.io/assets/js/main.js"></script>
+</div>
+                    
+<span><a href="https://fee1-dead.github.io/atom.xml">Atom Feed</a></a></span>
+
+                </footer></div>
+    </body>
+</html>
